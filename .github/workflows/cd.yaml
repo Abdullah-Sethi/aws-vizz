@@ -1,0 +1,33 @@
+name: CD - Deploy to EC2
+
+on:
+  workflow_run:
+    workflows: ["CI - Build and Push Docker Image"]
+    types:
+      - completed
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH
+
+        uses: appleboy/ssh-action@v1.0.0
+
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+
+          script: |
+
+            docker stop devops-app || true
+            docker rm devops-app || true
+
+            docker pull ${{ secrets.DOCKER_USERNAME }}/devops-app:latest
+
+            docker run -d \
+              -p 80:5000 \
+              --name devops-app \
+              ${{ secrets.DOCKER_USERNAME }}/devops-app:latest
