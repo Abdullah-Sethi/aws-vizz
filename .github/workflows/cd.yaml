@@ -12,21 +12,25 @@ jobs:
 
     steps:
       - name: Deploy via SSH
-
         uses: appleboy/ssh-action@v1.0.0
-
         with:
           host: ${{ secrets.EC2_HOST }}
-          username: ubuntu
+          username: ec2-user # Amazon Linux default user
           key: ${{ secrets.EC2_SSH_KEY }}
 
           script: |
+            # Ensure Docker is running
+            sudo systemctl start docker
+            sudo systemctl enable docker
 
+            # Remove old container if exists
             docker stop devops-app || true
             docker rm devops-app || true
 
+            # Pull latest image
             docker pull ${{ secrets.DOCKER_USERNAME }}/devops-app:latest
 
+            # Run container on port 5000 internally, mapped to 80 externally
             docker run -d \
               -p 80:5000 \
               --name devops-app \
